@@ -1,13 +1,11 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
 package ui;
 
 import javax.swing.*;
 import java.awt.*;
 import service.AuthService;
 import model.*;
+import dao.UsuarioDAO;
+import utils.FileManager;
 
 public class LoginUI extends JFrame {
     private JTextField txtEmail;
@@ -17,13 +15,57 @@ public class LoginUI extends JFrame {
     private AuthService authService;
     
     public LoginUI() {
+        // Crear datos iniciales ANTES de cualquier cosa
+        inicializarDatosPrueba();
+        
         authService = new AuthService();
         initComponents();
         setLocationRelativeTo(null);
     }
     
+    private void inicializarDatosPrueba() {
+        try {
+            // Crear carpeta data si no existe
+            FileManager.crearDirectorio("data");
+            
+            UsuarioDAO usuarioDAO = new UsuarioDAO();
+            
+            // Verificar si ya existe el admin
+            Usuario adminExistente = usuarioDAO.buscarPorEmail("admin@ecommerce.com");
+            
+            if (adminExistente == null) {
+                // Crear administrador
+                Administrador admin = new Administrador(
+                    null, 
+                    "Administrador Principal", 
+                    "admin@ecommerce.com", 
+                    "admin123"
+                );
+                usuarioDAO.guardarUsuario(admin);
+                System.out.println("✅ Administrador creado con éxito");
+            }
+            
+            // Opcional: Crear un cliente de prueba si no existe
+            Usuario clienteExistente = usuarioDAO.buscarPorEmail("cliente@test.com");
+            if (clienteExistente == null) {
+                Cliente cliente = new Cliente(
+                    null,
+                    "Cliente Test",
+                    "cliente@test.com",
+                    "1234"
+                );
+                usuarioDAO.guardarUsuario(cliente);
+                System.out.println("✅ Cliente de prueba creado");
+            }
+            
+        } catch (Exception e) {
+            System.out.println("⚠️ Error al crear datos iniciales: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
     private void initComponents() {
-        setTitle("E-Commerce - Inicio de Sesión");
+        setTitle("Wear/Ware - Inicio de Sesión");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
         setLayout(new GridBagLayout());
@@ -32,7 +74,7 @@ public class LoginUI extends JFrame {
         gbc.insets = new Insets(5, 5, 5, 5);
         
         // Título
-        JLabel lblTitulo = new JLabel("Bienvenido a E-Commerce");
+        JLabel lblTitulo = new JLabel("Bienvenido a Wear/Ware");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -70,10 +112,10 @@ public class LoginUI extends JFrame {
         
         // Eventos
         btnLogin.addActionListener(e -> login());
-        btnRegistro.addActionListener(e -> abrirRegistro());
-        
-        // Cargar datos de prueba
-        cargarDatosPrueba();
+        btnRegistro.addActionListener(e -> {
+            new RegistroUI().setVisible(true);
+            dispose();
+        });
     }
     
     private void login() {
@@ -89,35 +131,16 @@ public class LoginUI extends JFrame {
             Usuario usuario = authService.login(email, password);
             
             if (usuario instanceof Administrador) {
+                JOptionPane.showMessageDialog(this, "Bienvenido Administrador: " + usuario.getNombre());
                 new AdminUI((Administrador) usuario).setVisible(true);
             } else if (usuario instanceof Cliente) {
+                JOptionPane.showMessageDialog(this, "Bienvenido: " + usuario.getNombre());
                 new ClienteUI((Cliente) usuario).setVisible(true);
             }
             dispose();
             
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
-        }
-    }
-    
-    private void abrirRegistro() {
-        new RegistroUI().setVisible(true);
-        dispose();
-    }
-    
-    private void cargarDatosPrueba() {
-        try {
-            // Crear admin por defecto si no existe
-            if (authService.login("admin@ecommerce.com", "admin123") == null) {
-                // No existe, lo creamos
-                dao.UsuarioDAO usuarioDAO = new dao.UsuarioDAO();
-                if (usuarioDAO.buscarPorEmail("admin@ecommerce.com") == null) {
-                    Administrador admin = new Administrador(null, "Administrador", "admin@ecommerce.com", "admin123");
-                    usuarioDAO.guardarUsuario(admin);
-                }
-            }
-        } catch (Exception e) {
-            // Ignorar errores de carga de datos
+            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
         }
     }
     
